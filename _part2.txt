@@ -1,0 +1,250 @@
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  children: [
+                    _Header(name: _nameController.text),
+                    const SizedBox(height: 24),
+                    const Text('Inputs', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF004D40))),
+                    const SizedBox(height: 16),
+                    _buildInputField(controller: _ageController, label: 'Age', keyboardType: TextInputType.number),
+                    _buildDropdownField(label: 'Gender', value: _gender, options: ['Male', 'Female', 'Other'], onChanged: (val) => setState(() => _gender = val)),
+                    _buildYesNoField(label: 'Hypertension', groupValue: _hypertension, onChanged: (val) => setState(() => _hypertension = val)),
+                    _buildInputField(controller: _systolicBpController, label: 'Systolic BP', keyboardType: TextInputType.number),
+                    _buildInputField(controller: _diastolicBpController, label: 'Diastolic BP', keyboardType: TextInputType.number),
+                    _buildYesNoField(label: 'Heart Disease', groupValue: _heartDisease, onChanged: (val) => setState(() => _heartDisease = val)),
+                    _buildYesNoField(label: 'Married?', groupValue: _isMarried, onChanged: (val) => setState(() => _isMarried = val)),
+                    _buildDropdownField(label: 'Work Type', value: _workType, options: ['Private', 'Self-employed', 'Govt', 'Children', 'Never worked'], onChanged: (val) => setState(() => _workType = val)),
+                    _buildDropdownField(label: 'Residence Type', value: _residenceType, options: ['Urban', 'Rural'], onChanged: (val) => setState(() => _residenceType = val)),
+                    _buildDropdownField(label: 'Smoking Status', value: _smokingStatus, options: ['never smoked', 'formerly smoked', 'smokes'], onChanged: (val) => setState(() => _smokingStatus = val)),
+                    _buildYesNoField(label: 'Alcoholic', groupValue: _isAlcoholic, onChanged: (val) => setState(() => _isAlcoholic = val)),
+                    _buildYesNoField(label: 'Family History of Stroke', groupValue: _familyHistory, onChanged: (val) => setState(() => _familyHistory = val)),
+                    _buildInputField(controller: _heightController, label: 'Height (cm)', keyboardType: TextInputType.number),
+                    _buildInputField(controller: _weightController, label: 'Weight (kg)', keyboardType: TextInputType.number),
+                    _buildInputField(controller: _bmiController, label: 'Body Mass Index (BMI)', readOnly: true),
+                    _buildInputField(controller: _glucoseController, label: 'Average Glucose Level', keyboardType: TextInputType.number),
+                    _buildInputField(controller: _sleepController, label: 'Sleep (hours/day)', keyboardType: TextInputType.number),
+                    _buildInputField(controller: _exerciseController, label: 'Exercise (mins/day)', keyboardType: TextInputType.number),
+                    _buildYesNoField(label: 'Do you consume Excess Salt?', groupValue: _excessSalt, onChanged: (val) => setState(() => _excessSalt = val)),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _getPrediction,
+                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), backgroundColor: const Color(0xFF26C6DA), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: const Text('Heart Stroke Prediction', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 24),
+                  ].map((widget) => Padding(padding: const EdgeInsets.only(bottom: 16), child: widget)).toList(),
+                ),
+              ),
+            ),
+            if (_isLoading) Container(color: Colors.black54, child: const Center(child: CircularProgressIndicator())),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField({required TextEditingController controller, required String label, TextInputType keyboardType = TextInputType.text, bool readOnly = false}) {
+    return TextFormField(controller: controller, keyboardType: keyboardType, readOnly: readOnly, decoration: _inputDecoration().copyWith(labelText: label), validator: (v) => v!.isEmpty ? 'Please enter $label' : null);
+  }
+
+  Widget _buildDropdownField({required String label, required String? value, required List<String> options, required ValueChanged<String?> onChanged}) {
+    return DropdownButtonFormField<String>(value: value, items: options.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(), onChanged: onChanged, decoration: _inputDecoration().copyWith(labelText: label));
+  }
+
+  Widget _buildYesNoField({required String label, required int? groupValue, required ValueChanged<int?> onChanged}) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500)), const SizedBox(height: 8),
+      Row(children: [
+        _buildYesNoOption(label: 'Yes', value: 1, groupValue: groupValue, onChanged: onChanged), const SizedBox(width: 16),
+        _buildYesNoOption(label: 'No', value: 0, groupValue: groupValue, onChanged: onChanged),
+      ]),
+    ]);
+  }
+
+  Widget _buildYesNoOption({required String label, required int value, required int? groupValue, required ValueChanged<int?> onChanged}) {
+    final bool isSelected = value == groupValue;
+    return Expanded(child: GestureDetector(onTap: () => onChanged(value), child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(color: isSelected ? const Color(0xFF00ACC1) : Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFB2EBF2))),
+      child: Center(child: Text(label, style: TextStyle(color: isSelected ? Colors.white : const Color(0xFF00796B), fontWeight: FontWeight.w600))),
+    )));
+  }
+}
+
+// ----------------- Prediction Result Screen -----------------
+class PredictionResultScreen extends StatelessWidget {
+  final Map<String, dynamic> result;
+  const PredictionResultScreen({super.key, required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final prediction = result['stroke_prediction'];
+    final percentage = (prediction * 100).toStringAsFixed(0);
+    final isHighRisk = prediction > 0.5;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Prediction Result'), centerTitle: true, backgroundColor: Colors.transparent, elevation: 0),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('$percentage%', style: TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: isHighRisk ? Colors.red.shade700 : Colors.green.shade700)),
+            const SizedBox(height: 10),
+            Text(isHighRisk ? 'High Risk!!' : 'Low Risk', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: isHighRisk ? Colors.red.shade700 : Colors.green.shade700)),
+            const SizedBox(height: 40),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50), backgroundColor: const Color(0xFF26C6DA), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: const Text('Back to Form', style: TextStyle(color: Colors.white, fontSize: 18)),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------- Recommended Tips Screen -----------------
+class RecommendedTipsScreen extends StatelessWidget {
+  const RecommendedTipsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Recommended Tips"), backgroundColor: Colors.transparent, elevation: 0),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          _TipCard(icon: Icons.monitor_heart, title: 'Monitor Blood Pressure', description: 'High blood pressure is a major risk factor. Monitor it regularly and consult your doctor.'),
+          _TipCard(icon: Icons.smoking_rooms, title: 'Avoid Smoking', description: 'Smoking thickens your blood and increases the amount of plaque buildup in the arteries.'),
+          _TipCard(icon: Icons.fitness_center, title: 'Regular Exercise', description: 'Aim for at least 30 minutes of moderate-intensity exercise most days of the week.'),
+          _TipCard(icon: Icons.restaurant_menu, title: 'Healthy Diet', description: 'Eat plenty of fruits, vegetables, and whole grains. Limit saturated fats and salt.'),
+          _TipCard(icon: Icons.no_drinks, title: 'Limit Alcohol', description: 'Excessive alcohol consumption can raise your blood pressure and increase your risk of stroke.'),
+        ],
+      ),
+    );
+  }
+}
+
+class _TipCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  const _TipCard({required this.icon, required this.title, required this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Icon(icon, size: 40, color: const Color(0xFF00ACC1)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(description),
+      ),
+    );
+  }
+}
+
+// ----------------- Health Assistant Screen -----------------
+class HealthAssistantScreen extends StatelessWidget {
+  const HealthAssistantScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Health Assistant"), backgroundColor: Colors.transparent, elevation: 0),
+      body: Column(
+        children: [
+          Expanded(child: Center(child: Text("Chat interface coming soon!", style: TextStyle(color: Colors.grey.shade600)))),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                const Expanded(child: TextField(decoration: InputDecoration(hintText: "Type a message...", border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(30)))))),
+                const SizedBox(width: 8),
+                IconButton(icon: const Icon(Icons.send, color: Color(0xFF00ACC1)), onPressed: () {}),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+// ----------------- Settings Screen -----------------
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Settings"), backgroundColor: Colors.transparent, elevation: 0),
+      body: ListView(
+        children: [
+          ListTile(leading: const Icon(Icons.person_outline), title: const Text("Profile"), onTap: (){}),
+          ListTile(leading: const Icon(Icons.notifications_none), title: const Text("Notifications"), onTap: (){}),
+          ListTile(leading: const Icon(Icons.security), title: const Text("Privacy & Security"), onTap: (){}),
+          ListTile(leading: const Icon(Icons.help_outline), title: const Text("Help"), onTap: (){}),
+          ListTile(leading: const Icon(Icons.info_outline), title: const Text("About"), onTap: (){}),
+           ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text("Logout", style: TextStyle(color: Colors.red)),
+            onTap: (){
+               Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (Route<dynamic> route) => false,
+              );
+            }
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ----------------- Helper Widgets for multiple screens -----------------
+
+class _Header extends StatelessWidget {
+  final String name;
+  const _Header({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Row(
+        children: [
+          CircleAvatar(radius: 25, backgroundColor: const Color(0xFFE0F7FA), child: Text(name.isNotEmpty ? name.substring(0, 1) : "U", style: const TextStyle(color: Color(0xFF00ACC1), fontWeight: FontWeight.bold))),
+          const SizedBox(width: 12),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Hello,', style: TextStyle(color: Colors.grey)),
+            Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF004D40))),
+          ]),
+          const Spacer(),
+          const Icon(Icons.menu, color: Color(0xFF00796B), size: 30),
+        ],
+      ),
+    );
+  }
+}
+
+InputDecoration _inputDecoration() {
+  return InputDecoration(
+    filled: true,
+    fillColor: Colors.white,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFB2EBF2))),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFB2EBF2))),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF00ACC1), width: 2)),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  );
+}
+
